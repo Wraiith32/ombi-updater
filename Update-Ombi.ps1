@@ -3,6 +3,7 @@ $OmbiServiceName = "Ombi"
 $OmbiFolderPath = "E:\Data\Ombi"  # Path to your Ombi installation
 $BackupFolderPath = "E:\Data\Ombi-Backup"  # Path to store database backups
 $GitHubRepo = "Ombi-app/Ombi"
+$ReleaseType = "tags/v4.46.7"
 
 # Create backup folder if it doesn't exist
 if (-not (Test-Path -Path $BackupFolderPath)) {
@@ -15,7 +16,7 @@ Stop-Service -Name $OmbiServiceName -Force
 
 # Get the latest release URL from GitHub
 Write-Host "Fetching latest release from GitHub..."
-$ReleaseApiUrl = "https://api.github.com/repos/$GitHubRepo/releases/latest"
+$ReleaseApiUrl = "https://api.github.com/repos/$GitHubRepo/releases/$ReleaseType"
 $ReleaseData = Invoke-RestMethod -Uri $ReleaseApiUrl
 $Asset = $ReleaseData.assets | Where-Object { $_.name -like "*win-x64.zip" }
 
