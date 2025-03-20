@@ -3,7 +3,7 @@ $OmbiServiceName = "Ombi"
 $OmbiFolderPath = "E:\Data\Ombi"  # Path to your Ombi installation
 $BackupFolderPath = "E:\Data\Ombi-Backup"  # Path to store database backups
 $GitHubRepo = "Ombi-app/Ombi"
-$ReleaseType = "latest"
+$ReleaseType = "latest" # latest or prerelease
 
 # Create backup folder if it doesn't exist
 if (-not (Test-Path -Path $BackupFolderPath)) {
@@ -14,11 +14,45 @@ if (-not (Test-Path -Path $BackupFolderPath)) {
 Write-Host "Stopping Ombi service..."
 Stop-Service -Name $OmbiServiceName -Force
 
-# Get the latest release URL from GitHub
-Write-Host "Fetching latest release from GitHub..."
-$ReleaseApiUrl = "https://api.github.com/repos/$GitHubRepo/releases/$ReleaseType"
-$ReleaseData = Invoke-RestMethod -Uri $ReleaseApiUrl
-$Asset = $ReleaseData.assets | Where-Object { $_.name -like "*win-x64.zip" }
+# Get the release data from GitHub
+Write-Host "Fetching release data from GitHub..."
+$ReleaseApiUrl = "https://api.github.com/repos/$GitHubRepo/releases"
+$Releases = Invoke-RestMethod -Uri $ReleaseApiUrl
+
+# Determine which release to use based on ReleaseType
+if ($ReleaseType -eq "latest") {
+    # Use the first non-prerelease (latest stable release)
+    $SelectedRelease = $Releases | Where-Object { $_.prerelease -eq $false } | Select-Object -First 1
+} elseif ($ReleaseType -eq "prerelease") {
+    # Use the first prerelease (latest pre-release)
+    $SelectedRelease = $Releases | Where-Object { $_.prerelease -eq $true } | Select-Object -First 1
+} else {
+    Write-Host "Invalid ReleaseType. Use 'latest' or 'prerelease'." -ForegroundColor Red
+    exit 1
+}
+
+# Check if a suitable release was found
+if (-not $SelectedRelease) {
+    Write-Host "Could not find a suitable release for ReleaseType '$ReleaseType'." -ForegroundColor Red
+    exit 1
+}
+
+# Extract version number from the release tag
+$VersionNumber = $SelectedRelease.tag_name
+Write-Host "Selected $ReleaseType release version: $VersionNumber"
+
+# Prompt for confirmation
+$Confirmation = Read-Host "Do you want to proceed with downloading version $VersionNumber? (y/n)"
+if ($Confirmation -ne "y") {
+    Write-Host "Download aborted by user." -ForegroundColor Yellow
+    # Restart the service before exiting
+    Write-Host "Restarting Ombi service..."
+    Start-Service -Name $OmbiServiceName
+    exit 0
+}
+
+# Find the asset (win-x64.zip)
+$Asset = $SelectedRelease.assets | Where-Object { $_.name -like "*win-x64.zip" }
 
 if (-not $Asset) {
     Write-Host "Could not find a suitable release asset." -ForegroundColor Red
