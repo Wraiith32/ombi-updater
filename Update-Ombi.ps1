@@ -5,14 +5,45 @@ $BackupFolderPath = "E:\Data\Ombi-Backup"  # Path to store database backups
 $GitHubRepo = "Ombi-app/Ombi"
 $ReleaseType = "latest" # latest or prerelease
 
+# Check if running as Administrator
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "This script must be run as Administrator. Exiting." -ForegroundColor Red
+    exit 1
+}
+
+# Check for environment variables, prompt if not set
+$OmbiApiUrl = [System.Environment]::GetEnvironmentVariable("OMBI_API_URL", "User")
+if (-not $OmbiApiUrl) {
+    $OmbiApiUrl = Read-Host "Enter Ombi API URL (e.g., https://localhost:5000)"
+    $OmbiApiUrl = $OmbiApiUrl + "/api/v1/Status/info"
+    [System.Environment]::SetEnvironmentVariable("OMBI_API_URL", $OmbiApiUrl, "User")
+}
+
+$OmbiApiKey = [System.Environment]::GetEnvironmentVariable("OMBI_API_KEY", "User")
+if (-not $OmbiApiKey) {
+    $OmbiApiKey = Read-Host "Enter Ombi API Key (Settings > Configuration > General > Api Key)"
+    [System.Environment]::SetEnvironmentVariable("OMBI_API_KEY", $OmbiApiKey, "User")
+}
+
 # Create backup folder if it doesn't exist
 if (-not (Test-Path -Path $BackupFolderPath)) {
     New-Item -ItemType Directory -Path $BackupFolderPath
 }
 
-# Stop the Ombi service
-Write-Host "Stopping Ombi service..."
-Stop-Service -Name $OmbiServiceName -Force
+# Get the current installed version from Ombi API
+Write-Host "Checking current Ombi version via API..."
+try {
+    $ApiHeaders = @{
+        "ApiKey" = $OmbiApiKey
+    }
+    $StatusResponse = Invoke-RestMethod -Uri $OmbiApiUrl -Headers $ApiHeaders -Method Get
+    $CurrentVersion = $StatusResponse
+    Write-Host "Current installed version: $CurrentVersion"
+} catch {
+    Write-Host "Failed to retrieve current version via API. Proceeding without it." -ForegroundColor Yellow
+    $CurrentVersion = "Unknown"
+}
 
 # Get the release data from GitHub
 Write-Host "Fetching release data from GitHub..."
@@ -42,14 +73,16 @@ $VersionNumber = $SelectedRelease.tag_name
 Write-Host "Selected $ReleaseType release version: $VersionNumber"
 
 # Prompt for confirmation
-$Confirmation = Read-Host "Do you want to proceed with downloading version $VersionNumber? (y/n)"
+$Confirmation = Read-Host "Current Version: $CurrentVersion. Update to version $VersionNumber (y/n)"
 if ($Confirmation -ne "y") {
     Write-Host "Download aborted by user." -ForegroundColor Yellow
-    # Restart the service before exiting
-    Write-Host "Restarting Ombi service..."
-    Start-Service -Name $OmbiServiceName
     exit 0
 }
+
+
+# Stop the Ombi service
+Write-Host "Stopping Ombi service..."
+Stop-Service -Name $OmbiServiceName -Force
 
 # Find the asset (win-x64.zip)
 $Asset = $SelectedRelease.assets | Where-Object { $_.name -like "*win-x64.zip" }
