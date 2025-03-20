@@ -3,7 +3,7 @@ $OmbiServiceName = "Ombi"
 $OmbiFolderPath = "E:\Data\Ombi"  # Path to your Ombi installation
 $BackupFolderPath = "E:\Data\Ombi-Backup"  # Path to store database backups
 $GitHubRepo = "Ombi-app/Ombi"
-$ReleaseType = "tags/v4.46.7"
+$ReleaseType = "latest"
 
 # Create backup folder if it doesn't exist
 if (-not (Test-Path -Path $BackupFolderPath)) {
