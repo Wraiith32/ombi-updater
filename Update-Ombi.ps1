@@ -150,19 +150,12 @@ function Remove-OldFiles {
 }
 
 function Update-Ombi {
-    $SelectedRelease = Get-Release
-    if (-not $SelectedRelease) {
-        Write-Host "Could not find a suitable release for ReleaseType '$ReleaseType'." -ForegroundColor Red
-        exit 1
-    }
+    param(
+        [Parameter(Mandatory=$true)]
+        $SelectedRelease,
+        $CurrentVersion
+    )
     $VersionNumber = $SelectedRelease.tag_name
-    Write-Host "Selected $ReleaseType release version: $VersionNumber"
-    $CurrentVersion = Get-CurrentOmbiVersion
-    $Confirmation = Read-Host "Current Version: $CurrentVersion. Update to version $VersionNumber (y/n)"
-    if ($Confirmation -ne "y") {
-        Write-Host "Download aborted by user." -ForegroundColor Yellow
-        exit 0
-    }
     # Download and extract
     $Asset = $SelectedRelease.assets | Where-Object { $_.name -like "*win-x64.zip" }
     if (-not $Asset) {
@@ -181,9 +174,24 @@ function Update-Ombi {
 
 function Main {
     Check-Admin
+
+    $CurrentVersion = Get-CurrentOmbiVersion
+    $SelectedRelease = Get-Release
+    if (-not $SelectedRelease) {
+        Write-Host "Could not find a suitable release for ReleaseType '$ReleaseType'." -ForegroundColor Red
+        exit 1
+    }
+    $VersionNumber = $SelectedRelease.tag_name
+    $Confirmation = Read-Host "Current Version: $CurrentVersion. Update to version $VersionNumber (y/n)"
+    if ($Confirmation -ne "y") {
+        Write-Host "Update aborted by user." -ForegroundColor Yellow
+        exit 0
+    }
+
     Prompt-EnvVars
-    Ensure-BackupFolder
+    Ensure-BackupFolder   
     Stop-OmbiService
+
     if ($BackupMethod -eq "sqlite") {
         Backup-Sqlite
     } elseif ($BackupMethod -eq "mysql") {
@@ -192,7 +200,8 @@ function Main {
         Write-Host "Unknown backup method: $BackupMethod" -ForegroundColor Red
         exit 1
     }
-    Update-Ombi
+    
+    Update-Ombi -SelectedRelease $SelectedRelease -CurrentVersion $CurrentVersion
     Start-OmbiService
     Write-Host "Ombi update completed successfully!" -ForegroundColor Green
 }
