@@ -135,10 +135,10 @@ function Backup-MySql {
             if (Test-Path -Path $BackupFile) {
                 Write-Host "MySQL backup for $($MySqlDb) completed: $BackupFile"
             } else {
-                Write-Host "MySQL backup for $MySqlDb failed!" -ForegroundColor Red
+                Write-Host "MySQL backup for $($MySqlDb) failed!" -ForegroundColor Red
             }
         } catch {
-            Write-Host "mysqldump failed for $MySqlDb: $($_)" -ForegroundColor Red
+            Write-Host "mysqldump failed for $($MySqlDb): $($_)" -ForegroundColor Red
         }
     }
 }
