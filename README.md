@@ -58,12 +58,6 @@ The script will prompt for Ombi API URL and API Key if not already set as enviro
 powershell -File Update-Ombi.ps1 -BackupMethod mysql -OmbiServiceName "OmbiProd" -OmbiFolderPath "D:\Ombi" -BackupFolderPath "D:\Ombi-Backup"
 ```
 
-## Testing
-This repo includes a Pester test script (if present):
-```powershell
-Invoke-Pester .\Update-Ombi.Tests.ps1
-```
-
 ## Notes
 - Always run the script as Administrator.
 - The script will prompt for confirmation before making any changes.
