@@ -133,7 +133,7 @@ function Backup-MySql {
         try {
             $cmdOutput = cmd.exe /c $DumpCommand
             if (Test-Path -Path $BackupFile) {
-                Write-Host "MySQL backup for $MySqlDb completed: $BackupFile"
+                Write-Host "MySQL backup for $($MySqlDb) completed: $BackupFile"
             } else {
                 Write-Host "MySQL backup for $MySqlDb failed!" -ForegroundColor Red
             }
