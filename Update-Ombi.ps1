@@ -1,15 +1,13 @@
-﻿# Define variables
+﻿param(
+    [ValidateSet("sqlite", "mysql")]
+    [string]$BackupMethod = "sqlite"
+)
+# Define variables
 $OmbiServiceName = "Ombi"
 $OmbiFolderPath = "E:\Data\Ombi"  # Path to your Ombi installation
 $BackupFolderPath = "E:\Data\Ombi-Backup"  # Path to store database backups
 $GitHubRepo = "Ombi-app/Ombi"
 $ReleaseType = "latest" # latest or prerelease
-
-# Add parameter for backup method
-param(
-    [ValidateSet("sqlite", "mysql")]
-    [string]$BackupMethod = "sqlite"
-)
 
 # Check if running as Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
