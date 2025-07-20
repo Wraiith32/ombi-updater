@@ -5,6 +5,12 @@ $BackupFolderPath = "E:\Data\Ombi-Backup"  # Path to store database backups
 $GitHubRepo = "Ombi-app/Ombi"
 $ReleaseType = "latest" # latest or prerelease
 
+# Add parameter for backup method
+param(
+    [ValidateSet("sqlite", "mysql")]
+    [string]$BackupMethod = "sqlite"
+)
+
 # Check if running as Administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -100,16 +106,38 @@ Write-Host "Downloading latest release..."
 Invoke-WebRequest -Uri $DownloadUrl -OutFile $ZipFilePath
 
 # Backup database files
-Write-Host "Backing up database files..."
-$DbFiles = @("OmbiSettings.db", "OmbiExternal.db", "Ombi.db")
-foreach ($DbFile in $DbFiles) {
-    $SourcePath = Join-Path -Path $OmbiFolderPath -ChildPath $DbFile
-    if (Test-Path -Path $SourcePath) {
-        Copy-Item -Path $SourcePath -Destination $BackupFolderPath -Force
-        Write-Host "Backed up $DbFile"
-    } else {
-        Write-Host "$DbFile not found, skipping backup." -ForegroundColor Yellow
+Write-Host "Backing up database using method: $BackupMethod..."
+if ($BackupMethod -eq "sqlite") {
+    $DbFiles = @("OmbiSettings.db", "OmbiExternal.db", "Ombi.db")
+    foreach ($DbFile in $DbFiles) {
+        $SourcePath = Join-Path -Path $OmbiFolderPath -ChildPath $DbFile
+        if (Test-Path -Path $SourcePath) {
+            Copy-Item -Path $SourcePath -Destination $BackupFolderPath -Force
+            Write-Host "Backed up $DbFile"
+        } else {
+            Write-Host "$DbFile not found, skipping backup." -ForegroundColor Yellow
+        }
     }
+} elseif ($BackupMethod -eq "mysql") {
+    # Prompt for MySQL details
+    $MySqlHost = Read-Host "Enter MySQL Host (e.g., localhost)"
+    $MySqlUser = Read-Host "Enter MySQL Username"
+    $MySqlPassword = Read-Host -AsSecureString "Enter MySQL Password"
+    $MySqlDb = Read-Host "Enter MySQL Database Name"
+    $MySqlPasswordPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($MySqlPassword))
+    $TimeStamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $BackupFile = Join-Path -Path $BackupFolderPath -ChildPath ("Ombi-MySQL-Backup-$TimeStamp.sql")
+    $DumpCommand = "mysqldump -h $MySqlHost -u $MySqlUser --password=$MySqlPasswordPlain $MySqlDb > `"$BackupFile`""
+    Write-Host "Running: $DumpCommand"
+    $cmdOutput = cmd.exe /c $DumpCommand
+    if (Test-Path -Path $BackupFile) {
+        Write-Host "MySQL backup completed: $BackupFile"
+    } else {
+        Write-Host "MySQL backup failed!" -ForegroundColor Red
+    }
+} else {
+    Write-Host "Unknown backup method: $BackupMethod" -ForegroundColor Red
+    exit 1
 }
 
 # Remove all files except the database files
