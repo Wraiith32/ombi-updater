@@ -123,17 +123,19 @@ if ($BackupMethod -eq "sqlite") {
     $MySqlHost = Read-Host "Enter MySQL Host (e.g., localhost)"
     $MySqlUser = Read-Host "Enter MySQL Username"
     $MySqlPassword = Read-Host -AsSecureString "Enter MySQL Password"
-    $MySqlDb = Read-Host "Enter MySQL Database Name"
     $MySqlPasswordPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($MySqlPassword))
     $TimeStamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $BackupFile = Join-Path -Path $BackupFolderPath -ChildPath ("Ombi-MySQL-Backup-$TimeStamp.sql")
-    $DumpCommand = "mysqldump -h $MySqlHost -u $MySqlUser --password=$MySqlPasswordPlain $MySqlDb > `"$BackupFile`""
-    Write-Host "Running: $DumpCommand"
-    $cmdOutput = cmd.exe /c $DumpCommand
-    if (Test-Path -Path $BackupFile) {
-        Write-Host "MySQL backup completed: $BackupFile"
-    } else {
-        Write-Host "MySQL backup failed!" -ForegroundColor Red
+    $MySqlDatabases = @("ombi", "ombisettings", "ombiexternal")
+    foreach ($MySqlDb in $MySqlDatabases) {
+        $BackupFile = Join-Path -Path $BackupFolderPath -ChildPath ("Ombi-MySQL-Backup-$MySqlDb-$TimeStamp.sql")
+        $DumpCommand = "mysqldump -h $MySqlHost -u $MySqlUser --password=$MySqlPasswordPlain $MySqlDb > `"$BackupFile`""
+        Write-Host "Running: $DumpCommand"
+        $cmdOutput = cmd.exe /c $DumpCommand
+        if (Test-Path -Path $BackupFile) {
+            Write-Host "MySQL backup for $MySqlDb completed: $BackupFile"
+        } else {
+            Write-Host "MySQL backup for $MySqlDb failed!" -ForegroundColor Red
+        }
     }
 } else {
     Write-Host "Unknown backup method: $BackupMethod" -ForegroundColor Red
