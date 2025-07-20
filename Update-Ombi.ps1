@@ -138,7 +138,7 @@ function Backup-MySql {
                 Write-Host "MySQL backup for $MySqlDb failed!" -ForegroundColor Red
             }
         } catch {
-            Write-Host "mysqldump failed for $MySqlDb: $_" -ForegroundColor Red
+            Write-Host "mysqldump failed for $MySqlDb: $($_)" -ForegroundColor Red
         }
     }
 }
