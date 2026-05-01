@@ -175,6 +175,8 @@ function Update-Ombi {
 function Main {
     Check-Admin
 
+    Prompt-EnvVars
+
     $CurrentVersion = Get-CurrentOmbiVersion
     $SelectedRelease = Get-Release
     if (-not $SelectedRelease) {
@@ -188,7 +190,6 @@ function Main {
         exit 0
     }
 
-    Prompt-EnvVars
     Ensure-BackupFolder   
     Stop-OmbiService
 
