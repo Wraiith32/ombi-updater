@@ -201,11 +201,11 @@ function Main {
         Write-Host "Unknown backup method: $BackupMethod" -ForegroundColor Red
         exit 1
     }
-    
+
     Update-Ombi -SelectedRelease $SelectedRelease -CurrentVersion $CurrentVersion
     Start-OmbiService
     Write-Host "Ombi update completed successfully!" -ForegroundColor Green
 }
 
 # --- Script Entry Point ---
-Main
+MainAdding 
